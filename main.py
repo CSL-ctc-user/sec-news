@@ -16,6 +16,7 @@ def get_sharepoint_content():
     return "【要約対象のセキュリティニュース本文...】"
 
 def summarize_with_gemini(text):
+    current_location = "us-central1"
     vertexai.init(project=PROJECT_ID, location="us-central1")
     model = GenerativeModel("gemini-1.5-flash")
     print(f"DEBUG: Initializing Vertex AI in {current_location} for project {project_id}")
