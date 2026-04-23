@@ -1,23 +1,41 @@
+import os
+import vertexai
+from vertexai.generative_models import GenerativeModel
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# 元の関数を維持
 def summarize_with_gemini(text):
-    # 東京(asia-northeast1)と米国(us-central1)の両方を試す
     locations = ["asia-northeast1", "us-central1"]
-    # 試すモデル名（バージョン番号を外したものも含める）
     model_names = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-002"]
     
     for loc in locations:
         vertexai.init(project="my-project-csl-486600", location=loc)
         for model_name in model_names:
             try:
-                print(f"Trying: {model_name} in {loc}")
                 model = GenerativeModel(model_name)
-                # モデルの呼び出しテスト（空のプロンプトで試す）
+                # モデルの呼び出しテスト
                 model.generate_content("hello")
-                print(f"!!! SUCCESS: {model_name} works in {loc} !!!")
-                # 成功したらそれを使う
                 response = model.generate_content(f"要約してください: {text}")
                 return response.text
-            except Exception as e:
-                print(f"Failed: {model_name} in {loc} - {e}")
+            except Exception:
                 continue
-    
     return "Error: No model could be accessed."
+
+# Cloud Run がPOSTリクエストを受け取るためのルート定義
+@app.route("/", methods=["POST"])
+def summarize_endpoint():
+    # ユーザーからのJSONを受け取る
+    data = request.get_json()
+    # {"name": "Developer"} が送られてくる想定
+    text_to_process = data.get("name", "Developer")
+    
+    # 処理を実行
+    summary = summarize_with_gemini(text_to_process)
+    
+    # 結果を返す
+    return jsonify({"summary": summary})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
