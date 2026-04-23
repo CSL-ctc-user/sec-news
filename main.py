@@ -18,7 +18,7 @@ def get_sharepoint_content():
 def summarize_with_gemini(text):
     # バージョン番号なしの「gemini-1.5-pro」を指定することで404を回避
     vertexai.init(project=PROJECT_ID, location="us-central1")
-    model = GenerativeModel("gemini-1.5-pro")
+    model = GenerativeModel("gemini-1.5-flash")
     
     prompt = f"以下のセキュリティニュースを、要点のみ箇条書きで3行に要約してください：\n{text}"
     response = model.generate_content(prompt)
