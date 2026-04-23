@@ -10,18 +10,25 @@ def summarize_with_gemini(text):
     locations = ["asia-northeast1", "us-central1"]
     model_names = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-002"]
     
+    errors = [] # エラーを記録するリスト
+    
     for loc in locations:
         vertexai.init(project="my-project-csl-486600", location=loc)
         for model_name in model_names:
             try:
                 model = GenerativeModel(model_name)
-                # モデルの呼び出しテスト
                 model.generate_content("hello")
                 response = model.generate_content(f"要約してください: {text}")
                 return response.text
-            except Exception:
+            except Exception as e:
+                # エラー内容を記録
+                error_msg = f"{loc}/{model_name}: {str(e)}"
+                errors.append(error_msg)
+                print(error_msg) # ログにも出す
                 continue
-    return "Error: No model could be accessed."
+    
+    # 全部失敗したらエラーメッセージを返す
+    return "Error: " + " | ".join(errors)
 
 # Cloud Run がPOSTリクエストを受け取るためのルート定義
 @app.route("/", methods=["POST"])
