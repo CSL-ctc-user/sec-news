@@ -1,42 +1,23 @@
-import os
-import requests
-from flask import Flask, jsonify
-import vertexai
-from vertexai.generative_models import GenerativeModel
-
-app = Flask(__name__)
-
-# Cloud Run の環境変数から値を取得
-GRAPH_API_TOKEN = os.environ.get("GRAPH_API_TOKEN") 
-TOCARO_WEBHOOK_URL = os.environ.get("TOCARO_WEBHOOK_URL")
-PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-
-def get_sharepoint_content():
-    # 本番用のロジックをここに記載
-    return "【要約対象のセキュリティニュース本文...】"
-
 def summarize_with_gemini(text):
-    vertexai.init(project=PROJECT_ID, location="us-central1")
-    model = GenerativeModel("gemini-1.5-flash-002")
+    # 東京(asia-northeast1)と米国(us-central1)の両方を試す
+    locations = ["asia-northeast1", "us-central1"]
+    # 試すモデル名（バージョン番号を外したものも含める）
+    model_names = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-002"]
     
-    prompt = f"以下のセキュリティニュースを、要点のみ箇条書きで3行に要約してください：\n{text}"
-    response = model.generate_content(prompt)
-    return response.text
-
-def send_to_tocaro(message):
-    payload = {"text": message}
-    requests.post(TOCARO_WEBHOOK_URL, json=payload)
-
-@app.route("/", methods=["POST"])
-def run_pipeline():
-    try:
-        content = get_sharepoint_content()
-        summary = summarize_with_gemini(content)
-        send_to_tocaro(summary)
-        return jsonify({"status": "success", "summary": summary}), 200
-    except Exception as e:
-        # エラー発生時も500を返してログを残す
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    for loc in locations:
+        vertexai.init(project="my-project-csl-486600", location=loc)
+        for model_name in model_names:
+            try:
+                print(f"Trying: {model_name} in {loc}")
+                model = GenerativeModel(model_name)
+                # モデルの呼び出しテスト（空のプロンプトで試す）
+                model.generate_content("hello")
+                print(f"!!! SUCCESS: {model_name} works in {loc} !!!")
+                # 成功したらそれを使う
+                response = model.generate_content(f"要約してください: {text}")
+                return response.text
+            except Exception as e:
+                print(f"Failed: {model_name} in {loc} - {e}")
+                continue
+    
+    return "Error: No model could be accessed."
