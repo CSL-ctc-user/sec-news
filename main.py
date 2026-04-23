@@ -1,15 +1,11 @@
-import vertexai
-from vertexai.generative_models import GenerativeModel
+from flask import Flask
+import os
 
-# デバッグ用関数
-def list_available_models():
-    # プロジェクトで利用可能なモデルを確認するための簡単なロジック
-    print("Checking available models...")
-    # 実際にはモデルのメタデータを確認するAPIを叩きますが、
-    # シンプルに「使えるモデルをログに出す」だけでもヒントになります
-    # 成功すればここを通ります
-    pass
+app = Flask(__name__)
 
-# 実行時に以下を確認できるようにする
-# vertexai.init(project=PROJECT_ID, location="us-central1")
-# print("Initialization complete.")
+@app.route("/", methods=["POST", "GET"])
+def hello():
+    return "Hello, Cloud Run is working!", 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
